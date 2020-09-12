@@ -28,11 +28,12 @@
 
 #include "ui.h"
 
+#include "stmlib/system/system_clock.h"
+
 #include "clouds/cv_scaler.h"
 #include "clouds/drivers/gate_input.h"
 #include "clouds/dsp/granular_processor.h"
 #include "clouds/meter.h"
-#include "stmlib/system/system_clock.h"
 
 namespace clouds {
 
@@ -73,7 +74,7 @@ void Ui::Init(Settings* settings, CvScaler* cv_scaler, GranularProcessor* proces
   }
   cv_scaler_->UnlockBlendKnob();
 
-  if (switches_.pressed_immediate(SWITCH_WRITE)) {
+  if (switches_[SWITCH_WRITE]->pressed_immediate()) {
     mode_            = UI_MODE_CALIBRATION_1;
     ignore_releases_ = 1;
   }
@@ -93,32 +94,32 @@ void Ui::SaveState() {
 
 void Ui::Poll() {
   system_clock.Tick();
-  switches_.Debounce();
+  switches_.Scan();
 
   for (uint8_t i = 0; i < kNumSwitches; ++i) {
-    if (switches_.just_pressed(i)) {
+    Switch* s = switches_[i];
+
+    if (s->just_pressed()) {
       queue_.AddEvent(CONTROL_SWITCH, i, 0);
-      press_time_[i]      = system_clock.milliseconds();
-      long_press_time_[i] = system_clock.milliseconds();
+      s->capture_press();
+      continue;
     }
-    if (switches_.pressed(i) && press_time_[i] != 0) {
-      int32_t pressed_time = system_clock.milliseconds() - press_time_[i];
-      if (pressed_time > kLongPressDuration) {
-        queue_.AddEvent(CONTROL_SWITCH, i, pressed_time);
-        press_time_[i] = 0;
-      }
-    }
-    if (switches_.pressed(i) && long_press_time_[i] != 0) {
-      int32_t pressed_time = system_clock.milliseconds() - long_press_time_[i];
-      if (pressed_time > kVeryLongPressDuration) {
-        queue_.AddEvent(CONTROL_SWITCH, i, pressed_time);
-        long_press_time_[i] = 0;
-      }
+    if (!s->pressed() || s->press_time() == 0) {
+      continue;
     }
 
-    if (switches_.released(i) && press_time_[i] != 0) {
-      queue_.AddEvent(CONTROL_SWITCH, i, system_clock.milliseconds() - press_time_[i] + 1);
-      press_time_[i] = 0;
+    int32_t pressed_time = system_clock.milliseconds() - s->press_time();
+    if (pressed_time > kLongPressDuration && s->state() == SwitchPressed) {
+      queue_.AddEvent(CONTROL_SWITCH, i, pressed_time);
+      s->set_state(SwitchLongPressed);
+    }
+    if (pressed_time > kVeryLongPressDuration && s->state() == SwitchLongPressed) {
+      queue_.AddEvent(CONTROL_SWITCH, i, pressed_time);
+      s->set_state(SwitchVLongPressed);
+    }
+    if (s->released()) {
+      queue_.AddEvent(CONTROL_SWITCH, i, pressed_time + 1);
+      s->reset();
     }
   }
   PaintLeds();
@@ -359,8 +360,8 @@ void Ui::DoEvents() {
     if (e.data == 0) {
       OnSwitchPressed(e);
     } else if (e.data >= kLongPressDuration && e.control_id == SWITCH_MODE &&
-               switches_.pressed(SWITCH_WRITE)) {
-      press_time_[SWITCH_WRITE] = 0;
+               switches_[SWITCH_WRITE]->pressed()) {
+      switches_[SWITCH_WRITE]->reset();
       OnSecretHandshake();
     } else {
       OnSwitchReleased(e);
@@ -387,7 +388,7 @@ void Ui::DoEvents() {
     }
   }
 
-  if (processor_->inf_reverb() && !switches_.pressed(SWITCH_BYPASS)) {
+  if (processor_->inf_reverb() && !switches_[SWITCH_BYPASS]->pressed()) {
     processor_->set_inf_reverb(false);
   }
 }
@@ -404,7 +405,7 @@ uint8_t Ui::HandleFactoryTestingRequest(uint8_t command) {
 
     case FACTORY_TESTING_READ_GATE:
       if (argument <= 2) {
-        return switches_.pressed(argument);
+        return switches_[argument]->pressed();
       } else {
         return cv_scaler_->gate(argument - 3);
       }
