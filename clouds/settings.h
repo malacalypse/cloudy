@@ -32,6 +32,7 @@
 #include "clouds/drivers/adc.h"
 #include "clouds/dsp/granular_processor.h"
 #include "stmlib/stmlib.h"
+#include "stmlib/system/storage.h"
 
 #define SECTOR_SIZE                 0x20000  // 128kB flash pages
 #define PRESET_NUM_BANKS            3        // White, Red, Pink

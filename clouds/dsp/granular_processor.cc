@@ -422,14 +422,14 @@ void GranularProcessor::PreparePersistentData() {
 void GranularProcessor::GetPersistentData(PersistentBlock* block, size_t* num_blocks) {
   PersistentBlock* first_block = block;
 
-  block->tag  = FourCC<'s', 't', 'a', 't'>::value;
+  block->tag  = pack('s', 't', 'a', 't');
   block->data = &persistent_state_;
   block->size = sizeof(PersistentState);
   ++block;
 
   // Create save block holding the audio buffers.
   for (int32_t i = 0; i < num_channels_; ++i) {
-    block->tag  = FourCC<'b', 'u', 'f', 'f'>::value;
+    block->tag  = pack('b', 'u', 'f', 'f');
     block->data = buffer_[i];
     block->size = buffer_size_[num_channels_ - 1];
     ++block;

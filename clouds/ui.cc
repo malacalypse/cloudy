@@ -28,12 +28,11 @@
 
 #include "ui.h"
 
-#include "stmlib/system/system_clock.h"
-
 #include "clouds/cv_scaler.h"
 #include "clouds/drivers/gate_input.h"
 #include "clouds/dsp/granular_processor.h"
 #include "clouds/meter.h"
+#include "stmlib/system/system_clock.h"
 
 namespace clouds {
 

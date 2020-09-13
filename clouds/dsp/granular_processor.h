@@ -167,6 +167,11 @@ class GranularProcessor {
     return quality;
   }
 
+  // Replaces FourCC atrocity
+  inline uint32_t pack(uint8_t lsb, uint8_t b, uint8_t c, uint8_t msb) {
+    return (((((msb << 8) | c) << 8) | b) << 8) | lsb;
+  }
+
   void GetPersistentData(PersistentBlock* block, size_t* num_blocks);
   bool LoadPersistentData(const uint32_t* data);
   void PreparePersistentData();

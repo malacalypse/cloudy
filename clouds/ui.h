@@ -29,12 +29,10 @@
 #ifndef CLOUDS_UI_H_
 #define CLOUDS_UI_H_
 
-#include "stmlib/stmlib.h"
-
-#include "stmlib/ui/event_queue.h"
-
 #include "clouds/drivers/leds.h"
 #include "clouds/drivers/switches.h"
+#include "stmlib/stmlib.h"
+#include "stmlib/ui/event_queue.h"
 
 namespace clouds {
 
