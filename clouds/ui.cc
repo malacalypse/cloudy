@@ -299,7 +299,8 @@ void Ui::OnSwitchReleased(const Event& e) {
       } else if (mode_ == UI_MODE_SAVE) {
         load_save_location_ = (load_save_location_ + 1) & 3;
       } else if (mode_ == UI_MODE_LOAD) {
-        processor_->LoadPersistentData(settings_->sample_flash_data(load_save_location_));
+        // processor_->LoadPersistentData(settings_->sample_flash_data(load_save_location_));
+        processor_->LoadPreset(settings_->ConstPreset(0, load_save_location_));
         load_save_location_ = (load_save_location_ + 1) & 3;
         mode_               = UI_MODE_VU_METER;
       } else {
@@ -314,16 +315,18 @@ void Ui::OnSwitchReleased(const Event& e) {
         CalibrateC3();
       } else if (mode_ == UI_MODE_SAVE) {
         // Get pointers on data chunks to save.
-        PersistentBlock blocks[4];
-        size_t          num_blocks = 0;
+        //        PersistentBlock blocks[4];
+        //        size_t          num_blocks = 0;
 
         mode_ = UI_MODE_SAVING;
         // Silence the processor during the long erase/write.
         processor_->set_silence(true);
         system_clock.Delay(5);
-        processor_->PreparePersistentData();
-        processor_->GetPersistentData(blocks, &num_blocks);
-        settings_->SaveSampleMemory(load_save_location_, blocks, num_blocks);
+        //        processor_->PreparePersistentData();
+        //        processor_->GetPersistentData(blocks, &num_blocks);
+        //        settings_->SaveSampleMemory(load_save_location_, blocks, num_blocks);
+        processor_->ExportPreset(settings_->Preset(0, load_save_location_));
+        settings_->SavePresets();
         processor_->set_silence(false);
         load_save_location_ = (load_save_location_ + 1) & 3;
         mode_               = UI_MODE_VU_METER;

@@ -29,9 +29,15 @@
 #ifndef CLOUDS_SETTINGS_H_
 #define CLOUDS_SETTINGS_H_
 
+#include "clouds/drivers/adc.h"
+#include "clouds/dsp/granular_processor.h"
 #include "stmlib/stmlib.h"
 
-#include "clouds/drivers/adc.h"
+#define SECTOR_SIZE                 0x20000  // 128kB flash pages
+#define PRESET_NUM_BANKS            3        // White, Red, Pink
+#define PRESET_BANK_SIZE            4
+#define CURRENT_PRESET_VERSION      1
+#define CURRENT_PRESET_BANK_VERSION 1
 
 namespace clouds {
 
@@ -53,6 +59,33 @@ struct SettingsData {
   CalibrationData calibration_data;  // 48 bytes
   State           state;             // 8 bytes
   uint8_t         padding[8];
+};
+
+struct Preset {
+  size_t version;  // 0 = uninitialized
+
+  // Main mode settings
+  PlaybackMode playback_mode;
+  bool         stereo;
+  bool         low_fidelity;
+
+  // Pot positions
+  float position;
+  float size;
+  float pitch;
+  float density;
+  float texture;
+  float dry_wet;
+  float stereo_spread;
+  float feedback;
+  float reverb;
+};
+
+struct PresetBank {
+  size_t version;
+  size_t num_banks;
+  size_t bank_size;
+  Preset presets[PRESET_NUM_BANKS][PRESET_BANK_SIZE];
 };
 
 class PersistentBlock;
@@ -79,6 +112,10 @@ class Settings {
 
   void SaveSampleMemory(uint32_t index, PersistentBlock* blocks, size_t num_blocks);
 
+  const struct Preset* ConstPreset(size_t bank, size_t location);
+  struct Preset*       Preset(size_t bank, size_t location);
+  void                 SavePresets(void);
+
   inline CalibrationData* mutable_calibration_data() {
     return &data_.calibration_data;
   }
@@ -98,9 +135,14 @@ class Settings {
   }
 
  private:
-  bool         freshly_baked_;
-  SettingsData data_;
-  uint16_t     version_token_;
+  void init_presets(void);
+  void save_presets(void);
+
+  bool              freshly_baked_;
+  SettingsData      data_;
+  uint16_t          version_token_;
+  struct PresetBank presets_;
+  uint16_t          preset_version_token_;
 
   DISALLOW_COPY_AND_ASSIGN(Settings);
 };

@@ -31,11 +31,10 @@
 #include <cstring>
 
 #include "clouds/drivers/debug_pin.h"
-
+#include "clouds/resources.h"
+#include "clouds/settings.h"
 #include "stmlib/dsp/parameter_interpolator.h"
 #include "stmlib/utils/buffer_allocator.h"
-
-#include "clouds/resources.h"
 
 namespace clouds {
 
@@ -582,6 +581,49 @@ void GranularProcessor::Prepare() {
     }
     correlator_.EvaluateSomeCandidates();
   }
+}
+
+void GranularProcessor::ExportPreset(Preset* preset) {
+  if (preset == nullptr) {
+    return;
+  }
+  preset->playback_mode = playback_mode_;
+  preset->low_fidelity  = low_fidelity_;
+  preset->stereo        = (num_channels_ == 2);
+
+  preset->density       = parameters_.density;
+  preset->dry_wet       = parameters_.dry_wet;
+  preset->feedback      = parameters_.feedback;
+  preset->pitch         = parameters_.pitch;
+  preset->position      = parameters_.position;
+  preset->reverb        = parameters_.reverb;
+  preset->size          = parameters_.size;
+  preset->stereo_spread = parameters_.stereo_spread;
+  preset->texture       = parameters_.texture;
+}
+
+void GranularProcessor::LoadPreset(const Preset* preset) {
+  if (preset == nullptr) {
+    return;
+  }
+  silence_ = true;
+
+  playback_mode_ = playback_mode_;
+  low_fidelity_  = low_fidelity_;
+  num_channels_  = preset->stereo ? 2 : 1;
+
+  parameters_.density       = preset->density;
+  parameters_.dry_wet       = preset->dry_wet;
+  parameters_.feedback      = preset->feedback;
+  parameters_.pitch         = preset->pitch;
+  parameters_.position      = preset->position;
+  parameters_.reverb        = preset->reverb;
+  parameters_.size          = preset->size;
+  parameters_.stereo_spread = preset->stereo_spread;
+  parameters_.texture       = preset->texture;
+
+  Prepare();
+  silence_ = false;
 }
 
 }  // namespace clouds

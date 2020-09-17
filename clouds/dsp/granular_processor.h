@@ -170,6 +170,8 @@ class GranularProcessor {
   void GetPersistentData(PersistentBlock* block, size_t* num_blocks);
   bool LoadPersistentData(const uint32_t* data);
   void PreparePersistentData();
+  void ExportPreset(struct Preset* dest);
+  void LoadPreset(const struct Preset* preset);
 
  private:
   inline int32_t resolution() const {
