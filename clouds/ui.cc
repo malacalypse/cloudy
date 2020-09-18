@@ -38,6 +38,7 @@ namespace clouds {
 
 const int32_t kLongPressDuration     = 1000;
 const int32_t kVeryLongPressDuration = 1500;
+const size_t  kNumPresetLeds         = 4;
 
 using namespace stmlib;
 
@@ -170,11 +171,8 @@ void Ui::PaintLeds() {
       break;
 
     case UI_MODE_LOAD:
-      leds_.set_status(load_save_location_, 0, blink ? 255 : 0);
-      break;
-
     case UI_MODE_SAVE:
-      leds_.set_status(load_save_location_, blink ? 255 : 0, 0);
+      VisualizePresetLocation(fade, flash);
       break;
 
     case UI_MODE_SAVING:
@@ -456,6 +454,15 @@ void Ui::IncrementPlaybackMode(void) {
   uint8_t mode = (processor_->playback_mode() + 1) % PLAYBACK_MODE_LAST;
   processor_->set_playback_mode(static_cast<PlaybackMode>(mode));
   SaveState();
+}
+
+void Ui::VisualizePresetLocation(uint8_t fade, bool flash) {
+  uint8_t red   = (load_save_bank_ & 1) ? 0 : 255;
+  uint8_t white = (load_save_bank_ & 3) ? 255 : 0;
+  for (size_t i = 0; i < kNumPresetLeds; i++) {
+    leds_.set_status(i, fade & red, fade & white);
+  }
+  leds_.set_status(load_save_location_, flash ? red : 0, flash ? white : 0);
 }
 
 }  // namespace clouds
