@@ -134,6 +134,11 @@ class Settings {
     return freshly_baked_;
   }
 
+  inline void IncrementPresetLocation(uint8_t& bank, uint8_t& location) {
+    location = (location + 1) % presets_.bank_size;
+    bank     = (bank + (location == 0)) % presets_.num_banks;
+  }
+
  private:
   void init_presets(void);
   void save_presets(void);

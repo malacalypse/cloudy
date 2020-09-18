@@ -102,6 +102,13 @@ class Ui {
   void LoadSampleMemory();
   void SaveSampleMemory();
 
+  void IncrementLoadSaveLocation(void);
+  void SavePreset(void);
+  void DecrementPlaybackMode(void);
+  void IncrementPlaybackMode(void);
+
+  void Splash(uint32_t clock);
+
   stmlib::EventQueue<16> queue_;
 
   Settings* settings_;
@@ -116,6 +123,7 @@ class Ui {
   GranularProcessor* processor_;
   Meter*             meter_;
 
+  uint8_t  load_save_bank_;
   uint8_t  load_save_location_;
   uint16_t ignore_releases_;
 

@@ -26,14 +26,13 @@
 //
 // User interface.
 
-#include "clouds/ui.h"
-
-#include "stmlib/system/system_clock.h"
+#include "ui.h"
 
 #include "clouds/cv_scaler.h"
 #include "clouds/drivers/gate_input.h"
 #include "clouds/dsp/granular_processor.h"
 #include "clouds/meter.h"
+#include "stmlib/system/system_clock.h"
 
 namespace clouds {
 
@@ -41,6 +40,13 @@ const int32_t kLongPressDuration     = 1000;
 const int32_t kVeryLongPressDuration = 1500;
 
 using namespace stmlib;
+
+void Ui::Splash(uint32_t clock) {
+  uint8_t index = ((clock >> 8) + 1) & 3;
+  uint8_t fade  = (clock >> 2);
+  fade          = fade <= 127 ? (fade << 1) : 255 - (fade << 1);
+  leds_.set_intensity(3 - index, fade);
+}
 
 void Ui::Init(Settings* settings, CvScaler* cv_scaler, GranularProcessor* processor, Meter* meter) {
   settings_  = settings;
@@ -129,12 +135,9 @@ void Ui::PaintLeds() {
   leds_.set_enabled(!processor_->bypass());
 
   switch (mode_) {
-    case UI_MODE_SPLASH: {
-      uint8_t index = ((clock >> 8) + 1) & 3;
-      uint8_t fade  = (clock >> 2);
-      fade          = fade <= 127 ? (fade << 1) : 255 - (fade << 1);
-      leds_.set_intensity(3 - index, fade);
-    } break;
+    case UI_MODE_SPLASH:
+      Splash(clock);
+      break;
 
     case UI_MODE_VU_METER:
       if (processor_->bypass()) {
@@ -142,14 +145,6 @@ void Ui::PaintLeds() {
       } else {
         leds_.PaintBar(lut_db[meter_->peak() >> 7]);
       }
-      break;
-
-    case UI_MODE_BLEND_METER:
-      //  for (int32_t i = 0; i < 4; ++i) {
-      //    leds_.set_intensity(
-      //        i,
-      //        cv_scaler_->blend_value(static_cast<BlendParameter>(i)) * 255.0f);
-      //  }
       break;
 
     case UI_MODE_QUALITY:
@@ -207,6 +202,7 @@ void Ui::PaintLeds() {
       leds_.set_status(3, 255, 0);
       break;
 
+    case UI_MODE_BLEND_METER:
     default:
       break;
   }
@@ -263,10 +259,7 @@ void Ui::OnSwitchReleased(const Event& e) {
       break;
 
     case SWITCH_FREEZE:
-      if (e.data >= kVeryLongPressDuration) {
-        //  processor_->ToggleReverse();
-      } else if (e.data >= kLongPressDuration) {
-        //  processor_->ToggleFreeze();
+      if (e.data >= kLongPressDuration) {
         processor_->ToggleReverse();
       } else {
         processor_->ToggleFreeze();
@@ -274,73 +267,86 @@ void Ui::OnSwitchReleased(const Event& e) {
       break;
 
     case SWITCH_MODE:
-      if (e.data >= kVeryLongPressDuration) {
-        // mode_ = UI_MODE_PLAYBACK_MODE;
-      } else if (e.data >= kLongPressDuration) {
+      if (e.data >= kLongPressDuration) {
         if (mode_ == UI_MODE_QUALITY) {
           mode_ = UI_MODE_VU_METER;
         } else {
           mode_ = UI_MODE_LOAD;
         }
-      } else if (mode_ == UI_MODE_VU_METER || mode_ == UI_MODE_BLEND_METER) {
-        mode_ = UI_MODE_QUALITY;
-      } else if (mode_ == UI_MODE_BLENDING) {
-        uint8_t parameter = (cv_scaler_->blend_parameter() + 1) & 3;
-        cv_scaler_->set_blend_parameter(static_cast<BlendParameter>(parameter));
-        SaveState();
-      } else if (mode_ == UI_MODE_QUALITY) {
-        processor_->set_quality((processor_->quality() + 1) & 3);
-        SaveState();
-      } else if (mode_ == UI_MODE_PLAYBACK_MODE) {
-        uint8_t mode = processor_->playback_mode() == 0 ? PLAYBACK_MODE_LAST - 1
-                                                        : processor_->playback_mode() - 1;
-        processor_->set_playback_mode(static_cast<PlaybackMode>(mode));
-        SaveState();
-      } else if (mode_ == UI_MODE_SAVE) {
-        load_save_location_ = (load_save_location_ + 1) & 3;
-      } else if (mode_ == UI_MODE_LOAD) {
-        // processor_->LoadPersistentData(settings_->sample_flash_data(load_save_location_));
-        processor_->LoadPreset(settings_->ConstPreset(0, load_save_location_));
-        load_save_location_ = (load_save_location_ + 1) & 3;
-        mode_               = UI_MODE_VU_METER;
-      } else {
-        mode_ = UI_MODE_VU_METER;
+        break;
+      }
+
+      switch (mode_) {
+        case UI_MODE_VU_METER:
+        case UI_MODE_BLEND_METER:
+          mode_ = UI_MODE_QUALITY;
+          break;
+
+        case UI_MODE_BLENDING:
+          cv_scaler_->set_blend_parameter(
+            static_cast<BlendParameter>((cv_scaler_->blend_parameter() + 1) & 3));
+          SaveState();
+          break;
+
+        case UI_MODE_QUALITY:
+          processor_->set_quality((processor_->quality() + 1) & 3);
+          SaveState();
+          break;
+
+        case UI_MODE_PLAYBACK_MODE:
+          DecrementPlaybackMode();
+          break;
+
+        case UI_MODE_SAVE:
+          IncrementLoadSaveLocation();
+          break;
+
+        case UI_MODE_LOAD:
+          // processor_->LoadPersistentData(settings_->sample_flash_data(load_save_location_));
+          processor_->LoadPreset(settings_->ConstPreset(load_save_bank_, load_save_location_));
+          load_save_location_ = (load_save_location_ + 1) & 3;
+          mode_               = UI_MODE_VU_METER;
+          break;
+
+        default:
+          mode_ = UI_MODE_VU_METER;
       }
       break;
 
     case SWITCH_WRITE:
-      if (mode_ == UI_MODE_CALIBRATION_1) {
-        CalibrateC1();
-      } else if (mode_ == UI_MODE_CALIBRATION_2) {
-        CalibrateC3();
-      } else if (mode_ == UI_MODE_SAVE) {
-        // Get pointers on data chunks to save.
-        //        PersistentBlock blocks[4];
-        //        size_t          num_blocks = 0;
-
-        mode_ = UI_MODE_SAVING;
-        // Silence the processor during the long erase/write.
-        processor_->set_silence(true);
-        system_clock.Delay(5);
-        //        processor_->PreparePersistentData();
-        //        processor_->GetPersistentData(blocks, &num_blocks);
-        //        settings_->SaveSampleMemory(load_save_location_, blocks, num_blocks);
-        processor_->ExportPreset(settings_->Preset(0, load_save_location_));
-        settings_->SavePresets();
-        processor_->set_silence(false);
-        load_save_location_ = (load_save_location_ + 1) & 3;
-        mode_               = UI_MODE_VU_METER;
-      } else if (mode_ == UI_MODE_LOAD) {
-        load_save_location_ = (load_save_location_ + 1) & 3;
-      } else if (mode_ == UI_MODE_PLAYBACK_MODE) {
-        uint8_t mode = (processor_->playback_mode() + 1) % PLAYBACK_MODE_LAST;
-        processor_->set_playback_mode(static_cast<PlaybackMode>(mode));
-        SaveState();
-      } else if (e.data >= kLongPressDuration) {
+      if (e.data >= kLongPressDuration) {
         mode_ = UI_MODE_SAVE;
-      } else {
-        mode_ = UI_MODE_PLAYBACK_MODE;
+        break;
       }
+
+      switch (mode_) {
+        case UI_MODE_CALIBRATION_1:
+          CalibrateC1();
+          break;
+
+        case UI_MODE_CALIBRATION_2:
+          CalibrateC3();
+          break;
+
+        case UI_MODE_SAVE:
+          mode_ = UI_MODE_SAVING;
+          SavePreset();
+          mode_ = UI_MODE_VU_METER;
+          break;
+
+        case UI_MODE_LOAD:
+          IncrementLoadSaveLocation();
+          break;
+
+        case UI_MODE_PLAYBACK_MODE:
+          IncrementPlaybackMode();
+          break;
+
+        default:
+          mode_ = UI_MODE_PLAYBACK_MODE;
+          break;
+      }
+    default:
       break;
   }
 }
@@ -348,18 +354,18 @@ void Ui::OnSwitchReleased(const Event& e) {
 void Ui::DoEvents() {
   while (queue_.available()) {
     Event e = queue_.PullEvent();
-    if (e.control_type == CONTROL_SWITCH) {
-      if (e.data == 0) {
-        OnSwitchPressed(e);
-      } else {
-        if (e.data >= kLongPressDuration && e.control_id == SWITCH_MODE &&
-            switches_.pressed(SWITCH_WRITE)) {
-          press_time_[SWITCH_WRITE] = 0;
-          OnSecretHandshake();
-        } else {
-          OnSwitchReleased(e);
-        }
-      }
+    if (e.control_type != CONTROL_SWITCH) {
+      continue;
+    }
+
+    if (e.data == 0) {
+      OnSwitchPressed(e);
+    } else if (e.data >= kLongPressDuration && e.control_id == SWITCH_MODE &&
+               switches_.pressed(SWITCH_WRITE)) {
+      press_time_[SWITCH_WRITE] = 0;
+      OnSecretHandshake();
+    } else {
+      OnSwitchReleased(e);
     }
   }
 
@@ -423,6 +429,33 @@ uint8_t Ui::HandleFactoryTestingRequest(uint8_t command) {
       break;
   }
   return reply;
+}
+
+void Ui::SavePreset(void) {
+  // Silence the processor during the long erase/write.
+  processor_->set_silence(true);
+  system_clock.Delay(5);
+  processor_->ExportPreset(settings_->Preset(load_save_bank_, load_save_location_));
+  settings_->SavePresets();
+  processor_->set_silence(false);
+  IncrementLoadSaveLocation();
+}
+
+void Ui::IncrementLoadSaveLocation(void) {
+  settings_->IncrementPresetLocation(load_save_bank_, load_save_location_);
+}
+
+void Ui::DecrementPlaybackMode(void) {
+  uint8_t mode =
+    processor_->playback_mode() == 0 ? PLAYBACK_MODE_LAST - 1 : processor_->playback_mode() - 1;
+  processor_->set_playback_mode(static_cast<PlaybackMode>(mode));
+  SaveState();
+}
+
+void Ui::IncrementPlaybackMode(void) {
+  uint8_t mode = (processor_->playback_mode() + 1) % PLAYBACK_MODE_LAST;
+  processor_->set_playback_mode(static_cast<PlaybackMode>(mode));
+  SaveState();
 }
 
 }  // namespace clouds
