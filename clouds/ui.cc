@@ -170,8 +170,10 @@ void Ui::PaintLeds() {
       break;
 
     case UI_MODE_LOAD:
+      VisualizeLoadLocation(fade, flash);
+      break;
     case UI_MODE_SAVE:
-      VisualizePresetLocation(fade, flash);
+      VisualizeSaveLocation(fade, flash);
       break;
 
     case UI_MODE_SAVING:
@@ -429,9 +431,7 @@ uint8_t Ui::HandleFactoryTestingRequest(uint8_t command) {
 }
 
 void Ui::SavePreset(void) {
-  // Silence the processor during the long erase/write.
   processor_->set_silence(true);
-  system_clock.Delay(5);
   processor_->ExportPreset(settings_->Preset(load_save_bank_, load_save_location_));
   settings_->SavePresets();
   processor_->set_silence(false);
@@ -455,13 +455,22 @@ void Ui::IncrementPlaybackMode(void) {
   SaveState();
 }
 
-void Ui::VisualizePresetLocation(uint8_t fade, bool flash) {
+void Ui::VisualizeLoadLocation(uint8_t fade, bool flash) {
   uint8_t red   = (load_save_bank_ & 1) ? 0 : 255;
   uint8_t white = (load_save_bank_ & 3) ? 255 : 0;
   for (size_t i = 0; i < kNumPresetLeds; i++) {
     leds_.set_status(i, fade & red, fade & white);
   }
   leds_.set_status(load_save_location_, flash ? red : 0, flash ? white : 0);
+}
+
+void Ui::VisualizeSaveLocation(uint8_t fade, bool flash) {
+  uint8_t red   = (load_save_bank_ & 1) ? 0 : 255;
+  uint8_t white = (load_save_bank_ & 3) ? 255 : 0;
+  for (size_t i = 0; i < kNumPresetLeds; i++) {
+    leds_.set_status(i, flash ? red : 0, flash ? white : 0);
+  }
+  leds_.set_status(load_save_location_, fade & red, fade & white);
 }
 
 }  // namespace clouds

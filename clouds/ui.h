@@ -106,7 +106,8 @@ class Ui {
   void IncrementPlaybackMode(void);
 
   void Splash(uint32_t clock);
-  void VisualizePresetLocation(uint8_t fade, bool flash);
+  void VisualizeLoadLocation(uint8_t fade, bool flash);
+  void VisualizeSaveLocation(uint8_t fade, bool flash);
 
   stmlib::EventQueue<16> queue_;
 

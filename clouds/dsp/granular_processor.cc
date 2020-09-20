@@ -608,8 +608,8 @@ void GranularProcessor::LoadPreset(const Preset* preset) {
   }
   silence_ = true;
 
-  playback_mode_ = playback_mode_;
-  low_fidelity_  = low_fidelity_;
+  playback_mode_ = preset->playback_mode;
+  low_fidelity_  = preset->low_fidelity;
   num_channels_  = preset->stereo ? 2 : 1;
 
   parameters_.density       = preset->density;
