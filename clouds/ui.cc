@@ -103,10 +103,9 @@ void Ui::Poll() {
       s->capture_press();
       continue;
     }
-    if (!s->pressed() || s->press_time() == 0) {
+    if (s->press_time() == 0) {
       continue;
     }
-
     int32_t pressed_time = system_clock.milliseconds() - s->press_time();
     if (pressed_time > kLongPressDuration && s->state() == SwitchPressed) {
       queue_.AddEvent(CONTROL_SWITCH, i, pressed_time);

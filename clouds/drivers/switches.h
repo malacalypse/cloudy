@@ -94,9 +94,9 @@ class Switch {
  private:
   GPIO_TypeDef*    gpio_;
   uint16_t         pin_;
-  uint16_t         debounce_buffer_;
-  uint32_t         press_time_;
+  uint8_t          debounce_buffer_;
   enum SwitchState state_;
+  uint32_t         press_time_;
 };
 
 class Switches {
