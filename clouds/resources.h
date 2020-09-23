@@ -87,7 +87,7 @@ extern const float   lut_quantized_pitch[];
 #define LUT_QUANTIZED_PITCH       8
 #define LUT_QUANTIZED_PITCH_SIZE  1025
 
-#define LARGE_BUFFER_SIZE 118736  // 128kB - 0x3030 bytes (heap?)
+#define LARGE_BUFFER_SIZE 118608  // 128kB - 0x30B0 bytes (BSS)
 #define SMALL_BUFFER_SIZE 65408   // 64kB - 128 - fits in CCM on stm32f4
 
 }  // namespace clouds

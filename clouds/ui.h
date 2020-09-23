@@ -38,9 +38,7 @@ namespace clouds {
 
 enum UiMode {
   UI_MODE_VU_METER,
-  UI_MODE_BLEND_METER,
   UI_MODE_QUALITY,
-  UI_MODE_BLENDING,
   UI_MODE_PLAYBACK_MODE,
   UI_MODE_LOAD,
   UI_MODE_SAVE,
@@ -50,13 +48,6 @@ enum UiMode {
   UI_MODE_SAVING,
   UI_MODE_SPLASH,
   UI_MODE_LAST
-};
-
-enum SwitchIndex {
-  SWITCH_MODE,
-  SWITCH_WRITE,
-  SWITCH_FREEZE,
-  SWITCH_BYPASS,
 };
 
 enum FactoryTestingCommand {

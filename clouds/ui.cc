@@ -63,16 +63,9 @@ void Ui::Init(Settings* settings, CvScaler* cv_scaler, GranularProcessor* proces
   const State& state = settings_->state();
 
   // Sanitize saved settings.
-  cv_scaler_->set_blend_parameter(static_cast<BlendParameter>(state.blend_parameter & 3));
   processor_->set_quality(state.quality & 3);
   processor_->set_playback_mode(
     static_cast<PlaybackMode>(state.playback_mode % PLAYBACK_MODE_LAST));
-  for (int32_t i = 0; i < BLEND_PARAMETER_LAST; ++i) {
-    cv_scaler_->set_blend_value(static_cast<BlendParameter>(i),
-                                static_cast<float>(state.blend_value[i]) / 255.0f);
-  }
-  cv_scaler_->UnlockBlendKnob();
-
   if (switches_[SWITCH_WRITE]->pressed_immediate()) {
     mode_            = UI_MODE_CALIBRATION_1;
     ignore_releases_ = 1;
@@ -80,14 +73,9 @@ void Ui::Init(Settings* settings, CvScaler* cv_scaler, GranularProcessor* proces
 }
 
 void Ui::SaveState() {
-  State* state           = settings_->mutable_state();
-  state->blend_parameter = cv_scaler_->blend_parameter();
-  state->quality         = processor_->quality();
-  state->playback_mode   = processor_->playback_mode();
-  for (int32_t i = 0; i < BLEND_PARAMETER_LAST; ++i) {
-    state->blend_value[i] =
-      static_cast<uint8_t>(cv_scaler_->blend_value(static_cast<BlendParameter>(i)) * 255.0f);
-  }
+  State* state         = settings_->mutable_state();
+  state->quality       = processor_->quality();
+  state->playback_mode = processor_->playback_mode();
   settings_->Save();
 }
 
@@ -151,10 +139,6 @@ void Ui::PaintLeds() {
       leds_.set_status(processor_->quality(), 255, 0);
       break;
 
-    case UI_MODE_BLENDING:
-      leds_.set_status(cv_scaler_->blend_parameter(), 0, 255);
-      break;
-
     case UI_MODE_PLAYBACK_MODE:
       if (blink) {
         for (int i = 0; i < 4; i++)
@@ -201,7 +185,6 @@ void Ui::PaintLeds() {
       leds_.set_status(3, 255, 0);
       break;
 
-    case UI_MODE_BLEND_METER:
     default:
       break;
   }
@@ -277,14 +260,7 @@ void Ui::OnSwitchReleased(const Event& e) {
 
       switch (mode_) {
         case UI_MODE_VU_METER:
-        case UI_MODE_BLEND_METER:
           mode_ = UI_MODE_QUALITY;
-          break;
-
-        case UI_MODE_BLENDING:
-          cv_scaler_->set_blend_parameter(
-            static_cast<BlendParameter>((cv_scaler_->blend_parameter() + 1) & 3));
-          SaveState();
           break;
 
         case UI_MODE_QUALITY:
@@ -373,17 +349,10 @@ void Ui::DoEvents() {
     mode_ = UI_MODE_VU_METER;
   }
 
-  if ((mode_ == UI_MODE_VU_METER || mode_ == UI_MODE_BLEND_METER || mode_ == UI_MODE_BLENDING) &&
-      cv_scaler_->blend_knob_touched()) {
-    queue_.Touch();
-    // mode_ = UI_MODE_BLEND_METER;
-  }
-
   if (queue_.idle_time() > 3000) {
     queue_.Touch();
-    if (mode_ == UI_MODE_BLENDING || mode_ == UI_MODE_QUALITY || mode_ == UI_MODE_PLAYBACK_MODE ||
-        mode_ == UI_MODE_SAVE || mode_ == UI_MODE_LOAD || mode_ == UI_MODE_BLEND_METER ||
-        mode_ == UI_MODE_SPLASH) {
+    if (mode_ == UI_MODE_QUALITY || mode_ == UI_MODE_PLAYBACK_MODE || mode_ == UI_MODE_SAVE ||
+        mode_ == UI_MODE_LOAD || mode_ == UI_MODE_SPLASH) {
       mode_ = UI_MODE_VU_METER;
     }
   }
@@ -422,7 +391,6 @@ uint8_t Ui::HandleFactoryTestingRequest(uint8_t command) {
         CalibrateC1();
       } else {
         CalibrateC3();
-        cv_scaler_->set_blend_parameter(static_cast<BlendParameter>(0));
         SaveState();
       }
       break;

@@ -1,6 +1,6 @@
-// Copyright 2014 Olivier Gillet.
+// Copyright 2020 Daniel Collins
 //
-// Author: Olivier Gillet (ol.gillet@gmail.com)
+// Author: Daniel Collins
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,72 +26,33 @@
 //
 // Parameters of the granular effect.
 
-#ifndef CLOUDS_DSP_PARAMETERS_H_
-#define CLOUDS_DSP_PARAMETERS_H_
-
-#define SNAP_DISTANCE 0.02f
-
-#include "stmlib/stmlib.h"
+#include "parameters.h"
 
 namespace clouds {
 
-enum PotMode {
-  kPotModeJump = 0U,
-  kPotModePickup,
-};
+void Parameter::init(void) {
+  current_value_ = &control_value_;
+}
 
-class Parameter {
- public:
-  Parameter(void) {
-    init();
+void Parameter::init(float v) {
+  current_value_ = &control_value_;
+  control_value_ = v;
+}
+
+void Parameter::update(float control_value) {
+  float prev     = control_value_;
+  control_value_ = control_value;
+  if (current_value_ == &loaded_value_) {
+    bool crossover = ((prev <= loaded_value_) == (control_value > loaded_value_));
+    if (crossover) {
+      current_value_ = &control_value_;
+    }
   }
+}
 
-  void init(void);
-  void init(float);
-  void update(float control_value);
-  void load(float active_value);
-
-  inline float value(void) {
-    return *current_value_;
-  }
-
- private:
-  float* current_value_;
-  float  loaded_value_;
-  float  control_value_;
-};
-
-struct Parameters {
-  Parameter position;
-  Parameter size;
-  Parameter pitch;
-  Parameter density;
-  Parameter texture;
-  Parameter dry_wet;
-  Parameter stereo_spread;
-  Parameter feedback;
-  Parameter reverb;
-
-  bool freeze;
-  bool trigger;
-  bool gate;
-
-  struct Granular {
-    float overlap;
-    float window_shape;
-    float stereo_spread;
-    bool  use_deterministic_seed;
-    bool  reverse;
-  } granular;
-
-  struct Spectral {
-    float quantization;
-    float refresh_rate;
-    float phase_randomization;
-    float warp;
-  } spectral;
-};
+void Parameter::load(float loaded_value) {
+  loaded_value_  = loaded_value;
+  current_value_ = &loaded_value_;
+}
 
 }  // namespace clouds
-
-#endif  // CLOUDS_DSP_PARAMETERS_H_

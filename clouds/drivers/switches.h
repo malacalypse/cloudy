@@ -36,7 +36,13 @@
 
 namespace clouds {
 
-const uint8_t kNumSwitches = 4;
+enum SwitchIndex {
+  SWITCH_MODE = 0U,
+  SWITCH_WRITE,
+  SWITCH_FREEZE,
+  SWITCH_BYPASS,
+  kNumSwitches,
+};
 
 enum SwitchState {
   SwitchReleased = 0U,

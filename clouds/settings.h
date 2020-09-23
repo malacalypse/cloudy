@@ -50,16 +50,13 @@ struct CalibrationData {
 
 struct State {
   uint8_t quality;
-  uint8_t blend_parameter;
   uint8_t playback_mode;
-  uint8_t blend_value[4];
-  uint8_t padding;
+  uint8_t padding[2];
 };
 
 struct SettingsData {
   CalibrationData calibration_data;  // 48 bytes
   State           state;             // 8 bytes
-  uint8_t         padding[8];
 };
 
 struct Preset {

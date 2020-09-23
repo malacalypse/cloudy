@@ -73,11 +73,11 @@ class STFT {
 
   void Reset();
 
-  void Process(const Parameters& parameters,
-               const float*      input,
-               float*            output,
-               size_t            size,
-               size_t            stride);
+  void Process(Parameters*  parameters,
+               const float* input,
+               float*       output,
+               size_t       size,
+               size_t       stride);
 
   void Buffer();
 
@@ -105,7 +105,7 @@ class STFT {
   size_t ready_;
   size_t done_;
 
-  const Parameters* parameters_;
+  Parameters* parameters_;
 
   Modifier* modifier_;
 

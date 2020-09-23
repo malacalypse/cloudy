@@ -54,10 +54,7 @@ class PhaseVocoder {
             int32_t      resolution,
             float        sample_rate);
 
-  void Process(const Parameters& parameters,
-               const FloatFrame* input,
-               FloatFrame*       output,
-               size_t            size);
+  void Process(Parameters* parameters, const FloatFrame* input, FloatFrame* output, size_t size);
   void Buffer();
 
  private:
