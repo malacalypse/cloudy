@@ -62,10 +62,10 @@ void Switches::Init() {
   gpio_init.GPIO_PuPd  = GPIO_PuPd_UP;
   GPIO_Init(GPIOC, &gpio_init);
 
-  switches_[0].Init(GPIOC, GPIO_Pin_10);  // MODE
-  switches_[1].Init(GPIOC, GPIO_Pin_11);  // WRITE
-  switches_[2].Init(GPIOB, GPIO_Pin_6);   // FREEZE
-  switches_[3].Init(GPIOB, GPIO_Pin_8);   // BYPASS
+  switches_[SWITCH_MODE].Init(GPIOC, GPIO_Pin_11);   // MODE
+  switches_[SWITCH_WRITE].Init(GPIOC, GPIO_Pin_10);  // WRITE
+  switches_[SWITCH_FREEZE].Init(GPIOB, GPIO_Pin_8);  // FREEZE
+  switches_[SWITCH_BYPASS].Init(GPIOB, GPIO_Pin_6);  // BYPASS
 }
 
 void Switches::Scan() {

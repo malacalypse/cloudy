@@ -28,6 +28,8 @@
 
 #include "parameters.h"
 
+#define TOUCH_RANGE 0.01f  // within +/-1% is close enough to pickup
+
 namespace clouds {
 
 void Parameter::init(void) {
@@ -40,11 +42,10 @@ void Parameter::init(float v) {
 }
 
 void Parameter::update(float control_value) {
-  float prev     = control_value_;
   control_value_ = control_value;
   if (current_value_ == &loaded_value_) {
-    bool crossover = ((prev <= loaded_value_) == (control_value > loaded_value_));
-    if (crossover) {
+    bool touch = (__builtin_fabsf(control_value - loaded_value_) < TOUCH_RANGE);
+    if (touch) {
       current_value_ = &control_value_;
     }
   }
