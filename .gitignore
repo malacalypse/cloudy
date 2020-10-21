@@ -13,3 +13,4 @@ build/
 
 # Any linked or copied stmlib folders for non-mutable-dev-env building
 stmlib/
+stm_audio_bootloader/
